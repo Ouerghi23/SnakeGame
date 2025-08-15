@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Snake</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a0a2e 50%, #16213e 100%);
+            font-family: 'Orbitron', monospace;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #scoreDisplay {
+            position: absolute; 
+            top: 30px; 
+            left: 30px;
+            padding: 15px 25px;
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 150, 255, 0.1));
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1);
+        }
+
+        #controls {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.1));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        #gameOver {
+            position: absolute; 
+            top: 50%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 40px 60px;
+            background: linear-gradient(135deg, rgba(255, 0, 50, 0.1), rgba(150, 0, 50, 0.1));
+            backdrop-filter: blur(15px);
+            border: 3px solid rgba(255, 0, 50, 0.5);
+            border-radius: 20px;
+            font-size: 36px; 
+            font-weight: 900;
+            color: #ff0032;
+            display: none;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(255, 0, 50, 0.8);
+            box-shadow: 0 0 50px rgba(255, 0, 50, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        #gameOver .restart {
+            display: block;
+            margin-top: 20px;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+        }
+
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(26, 10, 46, 0.9));
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            pointer-events: all;
+        }
+
+        #startScreen h1 {
+            font-size: 60px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #00ffff, #ff0080);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+
+        #startScreen .subtitle {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        #startScreen .controls-hint {
+            font-size: 14px;
+            margin-bottom: 30px;
+            color: rgba(255, 255, 255, 0.5);
+            font-style: italic;
+        }
+
+        #startBtn {
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00ffff, #0080ff);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Orbitron', monospace;
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.3);
+        }
+
+        #startBtn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 255, 255, 0.5);
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(0, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: float 6s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-10px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <h1>🐍 SNAKE 3D</h1>
+        <p class="subtitle">Naviguez dans l'espace et collectez les fruits cosmiques</p>
+        <p class="controls-hint">Cliquez sur le bouton ou appuyez sur ESPACE/ENTRÉE</p>
+        <button id="startBtn">COMMENCER</button>
+    </div>
+
+    <div id="ui-container">
+        <div id="scoreDisplay">Score: 0</div>
+        <div id="controls">
+            🎮 CONTRÔLES<br>
+            ↑↓←→ Flèches<br>
+            Évitez les bords !
+        </div>
+        <div id="gameOver">
+            💀 GAME OVER 💀
+            <span class="restart">Appuyez sur R pour recommencer</span>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+    <script>
+        let score = 0;
+        let gameOver = false;
+        let gameStarted = false;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // Éclairage amélioré
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 10, 5);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+
+        const pointLight = new THREE.PointLight(0x00ffff, 0.5, 50);
+        pointLight.position.set(0, 0, 10);
+        scene.add(pointLight);
+
+        // Terrain avec grille
+        const gridHelper = new THREE.GridHelper(40, 40, 0x00ffff, 0x404040);
+        gridHelper.rotateX(Math.PI / 2);
+        gridHelper.material.opacity = 0.2;
+        gridHelper.material.transparent = true;
+        scene.add(gridHelper);
+
+        // Particules d'arrière-plan
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 200;
+        const positions = new Float32Array(particlesCount * 3);
+
+        for(let i = 0; i < particlesCount * 3; i++) {
+            positions[i] = (Math.random() - 0.5) * 100;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particlesMaterial = new THREE.PointsMaterial({ 
+            color: 0x00ffff, 
+            size: 0.1,
+            transparent: true,
+            opacity: 0.6
+        });
+        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particles);
+
+        // Limites du terrain
+        const LIMIT_X = 15;
+        const LIMIT_Y = 10;
+
+        // Snake avec matériau amélioré
+        const snake = [];
+        const snakeMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x00ff00,
+            shininess: 100,
+            transparent: true,
+            opacity: 0.9
+        });
+
+        function addSnakePart(x, y) {
+            const geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+            const cube = new THREE.Mesh(geometry, snakeMaterial);
+            cube.position.set(x, y, 0);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+            snake.push(cube);
+        }
+        addSnakePart(0, 0);
+
+        // Fruit avec effet brillant
+        const fruitGeometry = new THREE.SphereGeometry(0.4, 16, 16);
+        const fruitMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0xff0040,
+            shininess: 100,
+            emissive: 0x330010
+        });
+        const fruit = new THREE.Mesh(fruitGeometry, fruitMaterial);
+        fruit.castShadow = true;
+        scene.add(fruit);
+        spawnFruit();
+
+        // Caméra avec angle dynamique
+        camera.position.set(0, -20, 25);
+        camera.lookAt(0, 0, 0);
+
+        // Mouvement
+        let direction = { x: 1, y: 0 };
+        
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            gameStarted = true;
+            createParticles();
+        }
+
+        // Ajout de l'événement click au bouton
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('startBtn').addEventListener('click', startGame);
+        });
+
+        function createParticles() {
+            for(let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * window.innerWidth + 'px';
+                    particle.style.animationDelay = Math.random() * 2 + 's';
+                    document.body.appendChild(particle);
+                    
+                    setTimeout(() => {
+                        if(particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 6000);
+                }, i * 300);
+            }
+        }
+
+        window.addEventListener("keydown", (e) => {
+            if (!gameStarted) {
+                // Permettre de démarrer avec Espace ou Entrée
+                if (e.key === ' ' || e.key === 'Enter') {
+                    startGame();
+                }
+                return;
+            }
+            
+            if (e.key === "ArrowUp" && direction.y !== -1) direction = { x: 0, y: 1 };
+            if (e.key === "ArrowDown" && direction.y !== 1) direction = { x: 0, y: -1 };
+            if (e.key === "ArrowLeft" && direction.x !== 1) direction = { x: -1, y: 0 };
+            if (e.key === "ArrowRight" && direction.x !== -1) direction = { x: 1, y: 0 };
+            
+            if (e.key.toLowerCase() === 'r' && gameOver) {
+                location.reload();
+            }
+        });
+
+        function spawnFruit() {
+            const safeX = Math.floor(Math.random() * (LIMIT_X - 2) - (LIMIT_X - 2) / 2);
+            const safeY = Math.floor(Math.random() * (LIMIT_Y - 2) - (LIMIT_Y - 2) / 2);
+            fruit.position.set(safeX, safeY, 0);
+            
+            // Animation du fruit
+            fruit.scale.set(0.5, 0.5, 0.5);
+            const scaleUp = () => {
+                fruit.scale.x += 0.05;
+                fruit.scale.y += 0.05;
+                fruit.scale.z += 0.05;
+                if (fruit.scale.x < 1) {
+                    requestAnimationFrame(scaleUp);
+                }
+            };
+            scaleUp();
+        }
+
+        function saveScore() {
+            // Fonction désactivée pour éviter les erreurs réseau
+            console.log("Score sauvegardé:", score);
+        }
+
+        let moveCounter = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (!gameStarted) {
+                renderer.render(scene, camera);
+                return;
+            }
+            
+            if (gameOver) {
+                // Animation de rotation quand le jeu est terminé
+                particles.rotation.z += 0.01;
+                renderer.render(scene, camera);
+                return;
+            }
+
+            moveCounter++;
+            if (moveCounter % 8 === 0) {  // Vitesse légèrement plus rapide
+                moveSnake();
+                checkCollision();
+            }
+
+            // Animations continues
+            fruit.rotation.x += 0.02;
+            fruit.rotation.y += 0.02;
+            particles.rotation.z += 0.001;
+            
+            // Effet de pulsation pour la tête du serpent
+            if (snake.length > 0) {
+                const time = Date.now() * 0.005;
+                snake[0].scale.set(1 + Math.sin(time) * 0.1, 1 + Math.sin(time) * 0.1, 1 + Math.sin(time) * 0.1);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function moveSnake() {
+            const head = snake[0];
+            const newX = head.position.x + direction.x;
+            const newY = head.position.y + direction.y;
+
+            for (let i = snake.length - 1; i > 0; i--) {
+                snake[i].position.copy(snake[i - 1].position);
+            }
+            head.position.set(newX, newY, 0);
+        }
+
+        function checkCollision() {
+            const head = snake[0];
+
+            // Collision avec soi-même
+            for (let i = 1; i < snake.length; i++) {
+                if (head.position.distanceTo(snake[i].position) < 0.5) {
+                    document.getElementById("gameOver").style.display = "block";
+                    gameOver = true;
+                    return;
+                }
+            }
+
+            // Collision avec le fruit
+            if (head.position.distanceTo(fruit.position) < 0.6) {
+                score++;
+                document.getElementById("scoreDisplay").innerText = "Score: " + score;
+                saveScore();
+                spawnFruit();
+                addSnakePart(snake[snake.length - 1].position.x, snake[snake.length - 1].position.y);
+                
+                // Effet visuel lors de la collecte
+                pointLight.intensity = 1;
+                setTimeout(() => { pointLight.intensity = 0.5; }, 100);
+            }
+
+            // Collision avec les bords
+            if (Math.abs(head.position.x) > LIMIT_X || Math.abs(head.position.y) > LIMIT_Y) {
+                document.getElementById("gameOver").style.display = "block";
+                gameOver = true;
+                
+                // Effet visuel de fin de jeu
+                scene.children.forEach(child => {
+                    if (child.material && child !== fruit) {
+                        child.material.emissive = new THREE.Color(0x330000);
+                    }
+                });
+            }
+        }
+
+        // Gestion du redimensionnement
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
